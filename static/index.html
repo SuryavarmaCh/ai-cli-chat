@@ -1,0 +1,47 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CLI-Driven AI Chat</title>
+<style>
+:root{--bg:#0f1115;--card:#181b22;--line:#2a2f3a;--fg:#e6e8ee;--mut:#8b93a5;--acc:#6ea8fe;--ok:#4ade80;--warn:#fbbf24;--err:#f87171}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,sans-serif;display:flex;flex-direction:column;height:100vh}
+header{padding:12px 20px;border-bottom:1px solid var(--line)}header b{font-size:16px}header span{color:var(--mut);font-size:13px;margin-left:8px}
+#log{flex:1;overflow:auto;padding:20px;max-width:900px;width:100%;margin:0 auto}
+.msg{margin:0 0 16px;padding:12px 14px;border-radius:10px;background:var(--card);border:1px solid var(--line);white-space:pre-wrap;word-break:break-word}
+.me{background:#1d2a44;border-color:#2d4170;margin-left:15%}
+.badge{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:99px;margin-bottom:6px}
+.ok{background:#12301f;color:var(--ok)}.partial{background:#33290f;color:var(--warn)}.error{background:#3a1717;color:var(--err)}
+pre{background:#0b0d11;border:1px solid var(--line);border-radius:8px;padding:10px;overflow:auto;font-size:12.5px;margin:8px 0 0;max-height:320px}
+details{margin-top:8px;color:var(--mut);font-size:13px}summary{cursor:pointer}
+form{display:flex;gap:8px;padding:14px 20px;border-top:1px solid var(--line);max-width:900px;width:100%;margin:0 auto}
+input{flex:1;padding:12px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--fg);font:inherit}
+button{padding:0 18px;border:0;border-radius:8px;background:var(--acc);color:#04122b;font-weight:600;cursor:pointer}button:disabled{opacity:.5}
+.chips button{background:var(--card);color:var(--acc);border:1px solid var(--line);margin:0 6px 6px 0;padding:6px 10px;font-weight:500;font-size:13px}
+</style></head><body>
+<header><b>CLI-Driven AI Chat</b><span>chat → intent → approved CLI crawler → validated JSON</span></header>
+<div id="log"><div class="msg">Give me a task and a URL. I'll run a real crawler CLI in the backend and return a summary plus structured JSON.
+<div class="chips" style="margin-top:10px">
+<button type="button" data-p="Crawl https://example.com, extract the important information, give me a summary, and return the extracted data in JSON format.">Demo: example.com</button>
+<button type="button" data-p="Crawl https://quotes.toscrape.com, up to 4 pages, summarise it and give JSON">Demo: multi-page</button>
+<button type="button" data-p="Crawl http://127.0.0.1:8080 and summarise">Edge: private host</button>
+<button type="button" data-p="Crawl https://this-domain-does-not-exist-xyz123.com">Edge: unreachable</button></div></div></div>
+<form id="f"><input id="q" placeholder="e.g. Crawl https://example.com, summarise it and return JSON" autocomplete="off"><button id="go">Send</button></form>
+<script>
+const log=document.getElementById('log'),q=document.getElementById('q'),go=document.getElementById('go');
+function add(cls,html){const d=document.createElement('div');d.className='msg '+cls;d.innerHTML=html;log.appendChild(d);log.scrollTop=log.scrollHeight;return d}
+const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+async function send(text){
+  add('me',esc(text));q.value='';go.disabled=true;
+  const w=add('','<span class="badge partial">running…</span> Running crawler CLI in the backend…');
+  try{
+    const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text})});
+    const d=await r.json();
+    const label={ok:'SUCCESS',partial:'PARTIAL RESULT',error:'ERROR'}[d.status]||d.status;
+    let h=`<span class="badge ${d.status}">${label}</span>\n${esc(d.reply)}`;
+    if(d.json)h+=`<details open><summary>Extracted JSON</summary><pre>${esc(JSON.stringify(d.json,null,2))}</pre></details>`;
+    if(d.steps&&d.steps.length)h+=`<details><summary>Execution steps</summary><pre>${d.steps.map(s=>`+${s.t}s  ${esc(s.msg)}`).join('\n')}</pre></details>`;
+    if(d.cli)h+=`<details><summary>CLI: ${esc(d.cli.argv.join(' '))} → exit ${d.cli.exit_code}</summary><pre>${esc(d.cli.stderr||'(no stderr)')}</pre></details>`;
+    w.innerHTML=h;
+  }catch(e){w.innerHTML='<span class="badge error">ERROR</span> Could not reach backend: '+esc(e)}
+  go.disabled=false;q.focus();log.scrollTop=log.scrollHeight}
+document.getElementById('f').onsubmit=e=>{e.preventDefault();if(q.value.trim())send(q.value.trim())};
+document.querySelectorAll('.chips button').forEach(b=>b.onclick=()=>send(b.dataset.p));
+</script></body></html>
