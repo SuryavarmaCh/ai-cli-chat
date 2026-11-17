@@ -4,7 +4,7 @@ from intent import parse_request, summarise, build_json
 from runner import run_cli
 
 app = Flask(__name__, static_folder="static")
-SECRET_RE = re.compile(r"(sk-[A-Za-z0-9_-]{10,}|ANTHROPIC_API_KEY\S*)")
+SECRET_RE = re.compile(r"(sk-[A-Za-z0-9_-]{10,}|gsk_[A-Za-z0-9]{10,}|GROQ_API_KEY\S*)")
 
 @app.get("/")
 def index(): return send_from_directory("static", "index.html")
