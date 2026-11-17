@@ -3,45 +3,143 @@
 <style>
 :root{--bg:#0f1115;--card:#181b22;--line:#2a2f3a;--fg:#e6e8ee;--mut:#8b93a5;--acc:#6ea8fe;--ok:#4ade80;--warn:#fbbf24;--err:#f87171}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,sans-serif;display:flex;flex-direction:column;height:100vh}
-header{padding:12px 20px;border-bottom:1px solid var(--line)}header b{font-size:16px}header span{color:var(--mut);font-size:13px;margin-left:8px}
+header{padding:10px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}header b{font-size:16px}header span{color:var(--mut);font-size:13px}
+header .sp{flex:1}header button{background:var(--card);color:var(--acc);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:13px}
+.layout{flex:1;display:flex;min-height:0}
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
 #log{flex:1;overflow:auto;padding:20px;max-width:900px;width:100%;margin:0 auto}
 .msg{margin:0 0 16px;padding:12px 14px;border-radius:10px;background:var(--card);border:1px solid var(--line);white-space:pre-wrap;word-break:break-word}
 .me{background:#1d2a44;border-color:#2d4170;margin-left:15%}
 .badge{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:99px;margin-bottom:6px}
 .ok{background:#12301f;color:var(--ok)}.partial{background:#33290f;color:var(--warn)}.error{background:#3a1717;color:var(--err)}
-pre{background:#0b0d11;border:1px solid var(--line);border-radius:8px;padding:10px;overflow:auto;font-size:12.5px;margin:8px 0 0;max-height:320px}
+pre{background:#0b0d11;border:1px solid var(--line);border-radius:8px;padding:10px;overflow:auto;font-size:12.5px;margin:8px 0 0;max-height:320px;white-space:pre-wrap}
 details{margin-top:8px;color:var(--mut);font-size:13px}summary{cursor:pointer}
 form{display:flex;gap:8px;padding:14px 20px;border-top:1px solid var(--line);max-width:900px;width:100%;margin:0 auto}
 input{flex:1;padding:12px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--fg);font:inherit}
 button{padding:0 18px;border:0;border-radius:8px;background:var(--acc);color:#04122b;font-weight:600;cursor:pointer}button:disabled{opacity:.5}
-.chips button{background:var(--card);color:var(--acc);border:1px solid var(--line);margin:0 6px 6px 0;padding:6px 10px;font-weight:500;font-size:13px}
+.chips button,.mini{background:var(--card);color:var(--acc);border:1px solid var(--line);margin:0 6px 6px 0;padding:6px 10px;font-weight:500;font-size:13px}
+.view{cursor:pointer;color:var(--acc);font-size:13px;margin-top:8px;display:block}
+/* intro */
+.intro{white-space:normal}.intro h2{margin:0 0 6px;font-size:18px}.intro p{margin:6px 0;color:#c5cad6}
+.how{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:12px 0}
+.how div{background:#0f1218;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px}.how b{color:var(--acc);display:block;margin-bottom:2px}
+.try{color:var(--mut);font-size:13px;margin:8px 0 4px}
+/* chat history sidebar (left) */
+#chats{width:260px;border-right:1px solid var(--line);background:#12151b;display:flex;flex-direction:column;min-height:0}
+#chats.hide{display:none}
+#chats .top{padding:12px}#chats .top button{width:100%;padding:10px;border-radius:8px}
+#clist{flex:1;overflow:auto;padding:0 8px 12px}
+.c{display:flex;align-items:center;gap:6px;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:13.5px;color:#c5cad6;margin-bottom:2px}
+.c:hover{background:var(--card)}.c.sel{background:#1d2a44;color:#fff}
+.c span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.c i{font-style:normal;color:var(--mut);padding:0 6px;border-radius:4px;visibility:hidden}.c:hover i{visibility:visible}.c i:hover{color:var(--err)}
+.cnote{color:var(--mut);font-size:12px;padding:10px 12px;border-top:1px solid var(--line)}
+.empty{color:var(--mut);font-size:13px}
+/* execution panel (right) */
+aside{width:340px;border-left:1px solid var(--line);background:#12151b;display:flex;flex-direction:column;min-height:0}
+aside.hide{display:none}
+aside h3{margin:0;padding:12px 14px;font-size:14px;border-bottom:1px solid var(--line)}
+#detail{padding:12px 14px;overflow:auto;flex:1}#detail h4{margin:0 0 8px;font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.05em}
+.kv{display:grid;grid-template-columns:80px 1fr;gap:4px 8px;font-size:13px}.kv>span:nth-child(odd){color:var(--mut)}
+.row{display:flex;gap:6px;margin-top:10px}
+@media(max-width:900px){#chats,aside{position:fixed;top:0;bottom:0;z-index:6}#chats{left:0;width:min(280px,88vw)}aside{right:0;width:min(340px,92vw)}.me{margin-left:0}}
 </style></head><body>
-<header><b>CLI-Driven AI Chat</b><span>chat → intent → approved CLI crawler → validated JSON</span></header>
-<div id="log"><div class="msg">Give me a task and a URL. I'll run a real crawler CLI in the backend and return a summary plus structured JSON.
-<div class="chips" style="margin-top:10px">
+<header><button id="tc" type="button">☰ Chats</button><b>CLI-Driven AI Chat</b><span>chat → intent → approved CLI crawler → validated JSON</span><i class="sp"></i><button id="tg" type="button">Execution panel</button></header>
+<div class="layout">
+<nav id="chats"><div class="top"><button id="newc" type="button">+ New chat</button></div><div id="clist"></div><div class="cnote">Chats are saved in this browser only.</div></nav>
+<div class="main">
+<div id="log"></div>
+<form id="f"><input id="q" placeholder="e.g. Crawl https://example.com, summarise it and return JSON" autocomplete="off"><button id="go">Send</button></form>
+</div>
+<aside id="side"><h3>Execution panel</h3><div id="detail"><h4>Selected run</h4><div class="empty">Run a task to see CLI details here.</div></div></aside>
+</div>
+
+<template id="introT"><div class="msg intro">
+<h2>What this site does</h2>
+<p>Type a request in plain English with a website URL. Instead of just generating text, the app turns your request into a real, controlled task: its backend starts a <b>crawler command-line tool</b>, collects what actually happened, checks the result, and shows you a <b>summary</b> and <b>structured JSON</b>, labelled clearly as success, partial result or error.</p>
+<div class="how"><div><b>1 · Understand</b>Finds the URL and limits in your request</div><div><b>2 · Run</b>Starts the approved crawler CLI (no shell)</div><div><b>3 · Capture</b>Reads output, logs and exit code</div><div><b>4 · Answer</b>Validated JSON + summary in chat</div></div>
+<p>Safe by design: public http/https sites only, private/internal addresses blocked, robots.txt respected, strict page and time limits. Past chats are listed on the left; the <b>Execution panel</b> (top right) shows the exact command, exit code and timings.</p>
+<div class="try">Try one:</div>
+<div class="chips">
 <button type="button" data-p="Crawl https://example.com, extract the important information, give me a summary, and return the extracted data in JSON format.">Demo: example.com</button>
 <button type="button" data-p="Crawl https://quotes.toscrape.com, up to 4 pages, summarise it and give JSON">Demo: multi-page</button>
 <button type="button" data-p="Crawl http://127.0.0.1:8080 and summarise">Edge: private host</button>
-<button type="button" data-p="Crawl https://this-domain-does-not-exist-xyz123.com">Edge: unreachable</button></div></div></div>
-<form id="f"><input id="q" placeholder="e.g. Crawl https://example.com, summarise it and return JSON" autocomplete="off"><button id="go">Send</button></form>
+<button type="button" data-p="Crawl https://this-domain-does-not-exist-xyz123.com">Edge: unreachable</button></div></div></template>
+
 <script>
-const log=document.getElementById('log'),q=document.getElementById('q'),go=document.getElementById('go');
-function add(cls,html){const d=document.createElement('div');d.className='msg '+cls;d.innerHTML=html;log.appendChild(d);log.scrollTop=log.scrollHeight;return d}
-const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const $=id=>document.getElementById(id);
+const log=$('log'),q=$('q'),go=$('go'),side=$('side'),chatsEl=$('chats');
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const label=s=>({ok:'SUCCESS',partial:'PARTIAL RESULT',error:'ERROR'}[s]||s);
+
+/* ---- state: chats = [{id,title,msgs:[{role:'user',text}|{role:'bot',d}]}] ---- */
+let chats=[],cur=null,busy=false;
+try{chats=JSON.parse(localStorage.getItem('chats')||'[]')}catch(e){}
+const save=()=>{try{localStorage.setItem('chats',JSON.stringify(chats.slice(0,40)))}catch(e){}};
+const curChat=()=>chats.find(c=>c.id===cur);
+
+function newChat(){cur=null;renderChat();renderList();q.focus();if(innerWidth<=900)chatsEl.classList.add('hide')}
+function openChat(id){cur=id;renderChat();renderList();if(innerWidth<=900)chatsEl.classList.add('hide')}
+function delChat(id,ev){ev.stopPropagation();chats=chats.filter(c=>c.id!==id);save();if(cur===id)cur=null;renderChat();renderList()}
+
+function renderList(){
+  const el=$('clist');
+  el.innerHTML=chats.length?chats.map(c=>`<div class="c ${c.id===cur?'sel':''}" onclick="openChat(${c.id})"><span title="${esc(c.title)}">${esc(c.title)}</span><i title="Delete chat" onclick="delChat(${c.id},event)">✕</i></div>`).join(''):'<div class="empty" style="padding:8px 10px">No chats yet.</div>';
+}
+function botHtml(d,mid){
+  let h=`<span class="badge ${d.status}">${label(d.status)}</span>\n${esc(d.reply)}`;
+  if(d.json)h+=`<details open><summary>Extracted JSON</summary><pre>${esc(JSON.stringify(d.json,null,2))}</pre></details>`;
+  h+=`<a class="view" onclick="showDetail(${mid})">View execution details →</a>`;
+  return h;
+}
+function addMsg(cls,html){const d=document.createElement('div');d.className='msg '+cls;d.innerHTML=html;log.appendChild(d);log.scrollTop=log.scrollHeight;return d}
+function renderChat(){
+  log.innerHTML='';
+  const c=curChat();
+  if(!c){log.appendChild($('introT').content.cloneNode(true));bindChips();showDetail(null);return}
+  c.msgs.forEach((m,i)=>m.role==='user'?addMsg('me',esc(m.text)):addMsg('',botHtml(m.d,i)));
+  const lastBot=[...c.msgs].map((m,i)=>[m,i]).reverse().find(x=>x[0].role==='bot');
+  showDetail(lastBot?lastBot[1]:null);
+}
+
+/* ---- execution panel ---- */
+function showDetail(i){
+  const box=$('detail'),c=curChat();
+  const m=c&&i!=null?c.msgs[i]:null;
+  if(!m||m.role!=='bot'){box.innerHTML='<h4>Selected run</h4><div class="empty">Run a task to see CLI details here.</div>';return}
+  const d=m.d,cli=d.cli||{};
+  let h=`<h4>Selected run</h4><div class="kv"><span>Status</span><span><span class="badge ${d.status}">${label(d.status)}</span></span>
+  <span>Exit code</span><span>${cli.exit_code??'n/a (CLI not started)'}</span>
+  <span>Command</span><span style="word-break:break-all">${cli.argv?esc(cli.argv.join(' ')):'—'}</span></div>`;
+  if(d.steps&&d.steps.length)h+=`<h4 style="margin-top:14px">Timeline</h4><pre>${d.steps.map(s=>`+${s.t}s  ${esc(s.msg)}`).join('\n')}</pre>`;
+  if(cli.stderr)h+=`<h4 style="margin-top:14px">CLI log (stderr)</h4><pre>${esc(cli.stderr)}</pre>`;
+  if(d.json)h+=`<div class="row"><button class="mini" onclick="cpJson(${i})">Copy JSON</button><button class="mini" onclick="dlJson(${i})">Download .json</button></div>`;
+  box.innerHTML=h;side.classList.remove('hide');
+}
+const jsonOf=i=>JSON.stringify(curChat().msgs[i].d.json,null,2);
+function cpJson(i){navigator.clipboard.writeText(jsonOf(i))}
+function dlJson(i){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([jsonOf(i)],{type:'application/json'}));a.download='crawl-result.json';a.click()}
+
+/* ---- sending ---- */
 async function send(text){
-  add('me',esc(text));q.value='';go.disabled=true;
-  const w=add('','<span class="badge partial">running…</span> Running crawler CLI in the backend…');
-  try{
-    const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text})});
-    const d=await r.json();
-    const label={ok:'SUCCESS',partial:'PARTIAL RESULT',error:'ERROR'}[d.status]||d.status;
-    let h=`<span class="badge ${d.status}">${label}</span>\n${esc(d.reply)}`;
-    if(d.json)h+=`<details open><summary>Extracted JSON</summary><pre>${esc(JSON.stringify(d.json,null,2))}</pre></details>`;
-    if(d.steps&&d.steps.length)h+=`<details><summary>Execution steps</summary><pre>${d.steps.map(s=>`+${s.t}s  ${esc(s.msg)}`).join('\n')}</pre></details>`;
-    if(d.cli)h+=`<details><summary>CLI: ${esc(d.cli.argv.join(' '))} → exit ${d.cli.exit_code}</summary><pre>${esc(d.cli.stderr||'(no stderr)')}</pre></details>`;
-    w.innerHTML=h;
-  }catch(e){w.innerHTML='<span class="badge error">ERROR</span> Could not reach backend: '+esc(e)}
-  go.disabled=false;q.focus();log.scrollTop=log.scrollHeight}
-document.getElementById('f').onsubmit=e=>{e.preventDefault();if(q.value.trim())send(q.value.trim())};
-document.querySelectorAll('.chips button').forEach(b=>b.onclick=()=>send(b.dataset.p));
+  if(busy)return;busy=true;go.disabled=true;q.value='';
+  let c=curChat();
+  if(!c){c={id:Date.now(),title:text.slice(0,48),msgs:[]};chats.unshift(c);cur=c.id;log.innerHTML=''}
+  c.msgs.push({role:'user',text});addMsg('me',esc(text));renderList();
+  const w=addMsg('','<span class="badge partial">running…</span> Running crawler CLI in the backend…');
+  let d;
+  try{const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text})});d=await r.json()}
+  catch(e){d={status:'error',reply:'Could not reach backend: '+e}}
+  c.msgs.push({role:'bot',d});save();
+  const i=c.msgs.length-1;w.innerHTML=botHtml(d,i);showDetail(i);
+  busy=false;go.disabled=false;q.focus();log.scrollTop=log.scrollHeight;
+}
+function bindChips(){document.querySelectorAll('.chips button').forEach(b=>b.onclick=()=>send(b.dataset.p))}
+$('f').onsubmit=e=>{e.preventDefault();if(q.value.trim())send(q.value.trim())};
+$('newc').onclick=newChat;
+$('tc').onclick=()=>chatsEl.classList.toggle('hide');
+$('tg').onclick=()=>side.classList.toggle('hide');
+if(innerWidth<=900){chatsEl.classList.add('hide');side.classList.add('hide')}
+if(chats.length)cur=chats[0].id;
+renderChat();renderList();
 </script></body></html>
